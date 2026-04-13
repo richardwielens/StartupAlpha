@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ChannelType {
+  SMS
+  WHATSAPP
+  RCS
+  WEBCHAT
+}
+
+enum SenderType {
+  CUSTOMER
+  AGENT
+  SYSTEM
+}
+
+model Workspace {
+  id            String         @id @default(cuid())
+  name          String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  contacts      Contact[]
+  conversations Conversation[]
+}
+
+model Contact {
+  id            String         @id @default(cuid())
+  workspaceId   String
+  firstName     String
+  lastName      String?
+  phoneNumber   String?
+  email         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+
+  @@index([workspaceId])
+}
+
+model Conversation {
+  id            String         @id @default(cuid())
+  workspaceId   String
+  contactId     String
+  channel       ChannelType
+  subject       String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contact       Contact        @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  messages      Message[]
+
+  @@index([workspaceId])
+  @@index([contactId])
+}
+
+model Message {
+  id              String       @id @default(cuid())
+  conversationId  String
+  senderType      SenderType
+  content         String
+  externalMessageId String?
+  createdAt       DateTime     @default(now())
+
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
